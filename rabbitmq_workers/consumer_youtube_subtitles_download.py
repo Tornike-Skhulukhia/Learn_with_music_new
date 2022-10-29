@@ -37,7 +37,10 @@ if __name__ == "__main__":
     # actual functions
 
     def _get_youtube_video_transcript(video_id):
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+        transcript = YouTubeTranscriptApi.get_transcript(
+            video_id,
+            languages=("en", "cn", "ge", "ru", "en-US", "en-GB", "ka-ge", "ka"),
+        )
 
         return transcript
 

@@ -1,3 +1,5 @@
+import re
+
 from django.conf import settings as django_app_settings
 from django.contrib.auth import get_user_model
 from django.contrib.postgres.fields import ArrayField
@@ -139,6 +141,10 @@ class Song(m.Model):
             }
             for i in new_transcript
         ]
+
+        # remove some texts in brackets(sometimes present on youtube)
+        for i in new_transcript:
+            i["text"] = re.sub("[\{].*?[\}]", "", i["text"])
 
         # as it is not nice to have very short intervals of "" texts between lines
         max_duration_in_ms_to_merge_with_previous_line = 500  # 0.5 s
