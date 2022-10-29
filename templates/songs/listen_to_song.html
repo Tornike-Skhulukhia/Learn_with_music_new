@@ -1,0 +1,23 @@
+{% extends 'songs/_base.html' %}
+{% load static %}
+
+{% block title %}Listen & Learn{% endblock title %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'songs/css/song_listen.css' %}">
+<script src="{% static 'songs/js/vue.js' %}"></script>
+{% endblock extra_head %}
+
+
+{% block content %}
+<input type="hidden" id="song_data" value="{{ song_data }}">
+{% csrf_token %}
+<h1 class="text-center my-4">{{ song_title }}</h1>
+<div id="app"></div>
+
+<script src="{% static 'songs/js/song_listen.js' %}"></script>
+
+<script>
+    const mounted_app = app.mount('#app')
+</script>
+{% endblock content %}

@@ -1,0 +1,96 @@
+version: "3.8"
+
+services:
+  app:
+    container_name: "app"
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    env_file:
+      - env.postgres
+    environment:
+      RABBITMQ_HOST: "rabbitmq"
+
+    entrypoint: ./entrypoint.app.sh
+    # command: sleep 100d
+    volumes:
+      - .:/app/
+    ports:
+      - 8000:8000
+    networks:
+      - skynet
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  postgres:
+    container_name: "postgres"
+    image: postgres
+    shm_size: 1g
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      PGDATA: /data/postgres
+    volumes:
+      - postgres_data:/data/postgres
+    networks:
+      - skynet
+    restart: unless-stopped
+
+  pgadmin:
+    container_name: "pgadmin"
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: change_me@gmail.com # use this to login on http://localhost:6050
+      PGADMIN_DEFAULT_PASSWORD: password # and this also
+    ports:
+      - 6050:80
+    networks:
+      - skynet
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3-management
+    networks:
+      - skynet
+    restart: unless-stopped
+    ports:
+      - 5672:5672
+      - 15672:15672
+
+  worker_1:
+    container_name: youtube_audio_download_worker
+    build:
+      context: .
+      dockerfile: Dockerfile.youtube_audio_download_worker
+    entrypoint: "python -m rabbitmq_workers.consumer_youtube_download"
+    # entrypoint: "python rabbitmq_workers/consumer_youtube_download.py"
+    restart: unless-stopped
+    networks:
+      - skynet
+    volumes:
+      - .:/app/
+    env_file:
+      - env.postgres
+    environment:
+      RABBITMQ_HOST: "rabbitmq"
+
+    depends_on:
+      - rabbitmq
+      - postgres
+      - app
+  # redis:
+  #   image: redis
+  #   networks:
+  #     - skynet
+  #   restart: unless-stopped
+  #   container_name: finder_v3_redis
+
+
+volumes:
+  postgres_data:
+networks:
+  skynet:

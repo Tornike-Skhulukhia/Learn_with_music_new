@@ -1,0 +1,43 @@
+{% extends 'songs/_base.html' %}
+
+{% block title %}
+    Home page
+{% endblock title %}
+
+{% block content %}
+
+
+<div class="container">
+    <h1 class="text-center">Home Page</h1> 
+
+    <a href="{% url 'add_song' %}" class="btn bg-warning text-black mb-3 px-3 py-2">Add New Song</a>
+    <div class="songs row">
+
+        <h2>your last songs</h2>
+        
+        {% for song in object_list %}
+        <div class="card col-12 col-md-4 col-lg-3">
+            <a href="{{ song.get_absolute_url }}">
+                <img class="card-img-top" src="{{ song.youtube_image }}">
+            </a>
+            <div class="card-body">
+                <h5 class="card-title">{{ song.title }}</h5>
+                <h6 class="card-title">{{ song.custom_name }}</h6>
+                <p class="card-text">
+                    <a href="{% url 'delete_song' song.pk %}" class="text-white btn bg-danger">
+                        Delete
+                    </a>
+                    <a href="{% url 'edit_song' song.pk %}" class="text-white btn bg-primary">
+                        Edit
+                    </a>
+                    <a href="{% url 'listen_to_song' song.pk %}" class="text-white btn bg-success">
+                        Listen & Play
+                    </a>
+                </p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock content %}

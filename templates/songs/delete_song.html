@@ -1,0 +1,16 @@
+{% extends 'songs/_base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Delete{% endblock title %}
+{% block style %}{% endblock style %}
+
+{% block content %}
+
+<div class="content text-center">
+    <form method="post">{% csrf_token %}
+        <h1 class="text-center text-danger">Are you sure you want to delete "{{ object }}"?</h1>
+        <button type="submit" class="btn btn-lg text-white bg-danger px-5">Delete</button>
+    </form>
+</div>
+
+{% endblock content %}

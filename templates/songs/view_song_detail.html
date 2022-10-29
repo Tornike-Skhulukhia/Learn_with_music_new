@@ -1,0 +1,113 @@
+{% extends 'songs/_base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Add new{% endblock title %}
+{% block style %}
+input{
+    width: 100%;
+    margin: 4px;
+}
+
+[id*="div_id"]{
+    margin-bottom: 20px;
+}
+
+.status-initial{
+    background-color: #888;
+}
+.status-processing{
+    background-color: #00f;
+}
+.status-downloaded{
+    background-color: #198754;
+}
+.status-failed{
+    background-color: #f00;
+}
+
+
+
+{% endblock style %}
+
+{% block content %}
+<div class="container">
+
+    <h1 class="text-center">{{ object.title }}
+        <a href="{% url 'edit_song' song.pk %}" class="text-white btn bg-primary">
+            Edit
+        </a>
+    </h1>
+    <hr>
+
+    <div class="song_info">
+        <div class="row p-3">
+            <div class="col fw-bold text-center">youtube_url</div>
+            <div class="col text-center">
+                <a href="{{ object.youtube_url }}">{{ object.youtube_url }}</a>
+            </div>
+        </div>
+        <div class="row p-3">
+            <div class="col fw-bold text-center">custom_name</div>
+            <div class="col text-center">
+                {{ object.custom_name }}
+            </div>
+        </div>
+        <div class="row p-3">
+            <div class="col fw-bold text-center">youtube_image</div>
+            <div class="col text-center">
+                <img src="{{ object.youtube_image }}" alt="" width="100px">
+            </div>
+        </div>
+        <div class="row p-3">
+            <div class="col fw-bold text-center">audio_file_download_status</div>
+            <div 
+                class="col text-center text-white status-{{ object.get_audio_file_download_status_display|lower }}"
+                >
+                {{ object.get_audio_file_download_status_display|upper }}
+            </div>
+        </div>
+        <div class="row p-3">
+            <div class="col fw-bold text-center">duration</div>
+            <div class="col text-center">
+                {{ object.duration }} seconds
+            </div>
+        </div>
+        <div class="row p-3">
+            <div class="col fw-bold text-center">published_at</div>
+            <div class="col text-center">
+                {{ object.published_at }}
+            </div>
+        </div>
+        <div class="row p-3">
+            <div class="col fw-bold text-center">created_at</div>
+            <div class="col text-center">
+                {{ object.created_at }}
+            </div>
+        </div>
+        <div class="row p-3">
+            <div class="col fw-bold text-center">updated_at</div>
+            <div class="col text-center">
+                {{ object.updated_at }}
+            </div>
+        </div>
+        {% if object.absolute_static_url_of_audio_file %}
+        <div class="row p-3">
+            <div class="col fw-bold text-center">audio_file</div>
+            <div class="col text-center">
+                
+                <audio src="{{ object.absolute_static_url_of_audio_file }}" controls></audio>
+            </div>
+        </div>
+        {% endif %}
+        {% if object.raw_lyrics %}
+        <div class="row p-3">
+            <div class="col fw-bold text-center">raw lyrics</div>
+            <div class="col text-center">
+                {{ object.raw_lyrics|linebreaksbr }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock content %}

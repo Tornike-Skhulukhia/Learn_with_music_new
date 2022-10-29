@@ -1,0 +1,30 @@
+{% extends 'songs/_base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Add new{% endblock title %}
+{% block style %}
+input{
+    width: 100%;
+    margin: 4px;
+}
+
+[id*="div_id"]{
+    margin-bottom: 20px;
+}
+
+{% endblock style %}
+
+{% block content %}
+<div class="container">
+
+    <h1 class="text-center">
+        add new song
+    </h1>
+    
+    <form method="post">{% csrf_token %}
+        {{ form | crispy }}
+        <input type="submit" value="Save" class="btn btn-success">
+    </form>
+</div>
+
+{% endblock content %}
