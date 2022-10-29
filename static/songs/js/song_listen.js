@@ -14,7 +14,7 @@ const app = Vue.createApp({
                         // also scroll to make sure text is visible on screen
                         if (this.auto_scroll && this.selected_index >= this.scroll_num) {
                             // ! allow to disable, otherwise when editing times, is very ხელისშემშლელი
-                            document.querySelectorAll("#lyrics > div")[this.selected_index - this.scroll_num].scrollIntoView()
+                            document.querySelectorAll("#lyrics > div")[this.selected_index - this.scroll_num].scrollIntoView({})
                         }
                         break
                     }
@@ -100,7 +100,7 @@ const app = Vue.createApp({
             "audio_source": "",
             "youtube_image":"",
             "is_loading": false,
-            "auto_scroll": false,
+            "auto_scroll": true,
             "scroll_num": 4,
             "selected_index": 0,
             "current_time": 0,

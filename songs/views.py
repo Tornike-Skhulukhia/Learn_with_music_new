@@ -33,27 +33,22 @@ class AddSong(CreateView):
 
     fields = [
         "youtube_url",
+        "subtitles_video_youtube_url",
         "custom_name",
-        # "title",
-        # "published_at",
-        # "duration",
-        # "unique_words_in_lyrics",
     ]
 
     def form_valid(self, form):
 
         # make sure youtube url seems valid
         try:
-            youtube_url = urlparse(form["youtube_url"].data)
-            query = parse_qs(youtube_url.query)
+
+            query = parse_qs(urlparse(form["youtube_url"].data).query)
 
             youtube_id = query["v"][0]
 
             assert len(youtube_id) == 11
 
             form.instance.youtube_id = youtube_id
-
-            form.instance.save()
 
         except Exception as e:
 
@@ -63,6 +58,32 @@ class AddSong(CreateView):
             )
 
             return super().form_invalid(form)
+
+        # make sure youtube url seems valid if present
+        if form["subtitles_video_youtube_url"].data:
+
+            try:
+
+                query = parse_qs(
+                    urlparse(form["subtitles_video_youtube_url"].data).query
+                )
+
+                youtube_id = query["v"][0]
+
+                assert len(youtube_id) == 11
+
+                form.instance.subtitles_video_youtube_id = youtube_id
+
+            except Exception as e:
+
+                form.add_error(
+                    "subtitles_video_youtube_url",
+                    "Youtube subtitles video url does not seem correct, it must have form: https://www.youtube.com/watch?v=TO-_3tck2tg",
+                )
+
+                return super().form_invalid(form)
+
+        form.instance.save()
 
         add_message_to_fanout_queue(
             rabbitmq_host=RABBITMQ_HOST,
@@ -119,7 +140,9 @@ class UpdateSong(UpdateView):
         # at all and rollback, not delete lyrics info and then show error !
 
         form.instance.delete_lyrics()
-        form.instance.add_lyrics(form["raw_lyrics"].data.split("\n"))
+        form.instance.add_lyrics_with_raw_lyrics(
+            form["raw_lyrics"].data.split("\n")
+        )
 
         return super().form_valid(form)
 

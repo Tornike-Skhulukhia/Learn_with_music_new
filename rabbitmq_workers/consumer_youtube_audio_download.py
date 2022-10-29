@@ -4,6 +4,7 @@ import logging
 import os
 
 import django
+from django.db import transaction
 from pytube import YouTube
 
 logging.basicConfig(
@@ -29,13 +30,23 @@ if __name__ == "__main__":
 
     # actual functions
 
-    def _download_audio_using_youtube_video_id(video_id, filename):
+    def _make_sure_audio_file_is_downloaded_for_video(video_id, filename):
 
         yt = YouTube(f"https://www.youtube.com/watch?v={video_id}")
 
-        audio = yt.streams.filter(only_audio=True).first()
+        # if file already exiss, do not redownload it
+        if os.path.isfile(os.path.join("media/audio/", filename)):
+            logging.info(
+                f"Same audio file already downloaded for video {video_id}, skipping redownload"
+            )
+        else:
+            audio = yt.streams.filter(only_audio=True).first()
 
-        out_file = audio.download(output_path="media/audio/", filename=filename)
+            audio.download(output_path="media/audio/", filename=filename)
+
+            logging.info(
+                f"From youtube downloaded audio file for video_id {video_id}"
+            )
 
         return yt
 
@@ -44,10 +55,15 @@ if __name__ == "__main__":
 
         song_pk = body.decode("utf-8")
 
-        # ch.basic_ack(delivery_tag=method.delivery_tag)
-        # return
+        # with transaction.atomic(durable=True):
 
-        song = Song.objects.get(id=song_pk)
+        song = Song.objects.filter(id=song_pk)
+        if not song.exists():
+            logging.info(f"Skipping not existent song {song_pk}")
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+            return
+
+        song = song.get()
 
         video_id = song.youtube_id
 
@@ -57,23 +73,20 @@ if __name__ == "__main__":
 
         # change status in db for added song
         song._set_audio_file_download_status("Processing")
-        song.save()
 
         try:
             audio_filename = f"{video_id}.mp3"
 
-            yt = _download_audio_using_youtube_video_id(
+            yt = _make_sure_audio_file_is_downloaded_for_video(
                 video_id, filename=audio_filename
             )
 
-            # Success | this function does Downloaded status set itself
+            # Success
             song._update_info_using_youtube_audio_download_object(
                 yt, audio_filename
             )
 
-            logging.info(
-                f"From youtube downloaded audio with video id {video_id}"
-            )
+            song._set_audio_file_download_status("Downloaded")
 
         except Exception as e:
             logging.info(
@@ -82,7 +95,6 @@ if __name__ == "__main__":
             # Failure
             song._set_audio_file_download_status("Failed")
 
-        song.save()
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
     # Lets GO!

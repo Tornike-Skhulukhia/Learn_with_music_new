@@ -10,7 +10,6 @@ class TestSong(TestCase):
             title="USA For Africa - We Are The World (HQ official Video)",
             duration=426,
             published_at=date(2016, 2, 28),
-            unique_words_in_lyrics=[],
         )
 
     def test_song_created(self):
@@ -26,8 +25,6 @@ class TestSong(TestCase):
         )
         self.assertEqual(song.duration, 426)
         self.assertEqual(song.published_at, date(2016, 2, 28))
-        self.assertEqual(song.unique_words_in_lyrics, [])
-        self.assertEqual(song.verified, False)
 
 
 class TestSongLine(TestCase):
@@ -37,7 +34,6 @@ class TestSongLine(TestCase):
             title="Eminem Till i Collapse (Official Music Video)",
             duration=317,
             published_at=date(2009, 12, 12),
-            unique_words_in_lyrics=[],
         )
 
         self.lyrics = [
@@ -70,7 +66,7 @@ class TestSongLine(TestCase):
             "Fo' shizzle, my wizzle, this is the plot, listen up",
             "You bizzles forgot, Slizzle does not give a fuck",
         ]
-        song.add_lyrics(self.lyrics)
+        song.add_lyrics_with_raw_lyrics(self.lyrics)
 
     def test_lyrics_added(self):
         song = Song.objects.first()
@@ -80,17 +76,15 @@ class TestSongLine(TestCase):
         # first line saved correctly
         assert lines[0].line_number == 1
         assert lines[0].text == self.lyrics[0]
-        assert lines[0].duration == 0
         assert lines[0].language == Language.objects.get(id="en")
-        assert lines[0].start_time == 0
+        assert lines[0].start_time_millisecond == 0
         assert lines[0].song == song
 
         # last line saved correctly
         assert lines[-1].line_number == len(self.lyrics)
         assert lines[-1].text == self.lyrics[-1]
-        assert lines[-1].duration == 0
         assert lines[-1].language == Language.objects.get(id="en")
-        assert lines[-1].start_time == 0
+        assert lines[-1].start_time_millisecond == (len(self.lyrics) - 1) * 5000
         assert lines[-1].song == song
 
     def test_lyrics_attribute(self):
@@ -98,4 +92,43 @@ class TestSongLine(TestCase):
 
         lyrics = song.lyrics
 
-        assert lyrics[0] == {"start": 0, "end": 0, "text": self.lyrics[0]}
+        assert lyrics[0] == {
+            "start": 0,
+            "end": 5000,
+            "text": self.lyrics[0],
+        }
+
+    def test_update_info_using_youtube_transcripts(self):
+        song = Song.objects.first()
+
+        transcripts = [
+            {"text": "Hey there", "start": 7.58, "duration": 6.13},
+            {"text": "how are you", "start": 14.08, "duration": 7.58},
+        ]
+        song._update_info_using_youtube_transcripts(transcripts)
+
+        # make sure blanks were filled in correctly
+        lyrics = song.lyrics
+
+        assert lyrics == [
+            {
+                "start": 0,
+                "end": 7580,
+                "text": "",
+            },
+            {
+                "start": 7580,
+                "end": 13710,
+                "text": "Hey there",
+            },
+            {
+                "start": 13710,
+                "end": 14080,
+                "text": "",
+            },
+            {
+                "start": 14080,
+                "end": 21660,
+                "text": "how are you",
+            },
+        ]

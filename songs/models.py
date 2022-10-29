@@ -10,7 +10,7 @@ from .helper_funcs import _get_language_using_text
 
 # Create your models here.
 class Song(m.Model):
-    AUDIO_FILE_DOWNLOAD_STATUSES = (
+    DOWNLOAD_STATUSES = (
         ("0", "Initial"),
         ("1", "Processing"),
         ("2", "Downloaded"),
@@ -19,22 +19,27 @@ class Song(m.Model):
 
     youtube_url = m.CharField(max_length=128, default="")
     youtube_id = m.CharField(max_length=11)
+
+    subtitles_video_youtube_id = m.CharField(max_length=11, null=True)
+    subtitles_video_youtube_url = m.CharField(
+        max_length=128, default="", null=True, blank=True
+    )
+
     title = m.CharField(max_length=256)
-    custom_name = m.CharField(max_length=256, blank=True, null=True)
+    custom_name = m.CharField(max_length=256, blank=True, default="")
     duration = m.SmallIntegerField(default=0)
+
     published_at = m.DateField(null=True, blank=True)
-    # raw_lyrics = ArrayField(
-    #     base_field=m.Text(max_length=128),
-    #     null=True,
-    #     blank=True,
-    # )
     raw_lyrics = m.TextField(blank=True, null=True)
 
     created_at = m.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = m.DateTimeField(auto_now=True, null=True, blank=True)
 
     audio_file_download_status = m.CharField(
-        max_length=2, choices=AUDIO_FILE_DOWNLOAD_STATUSES, default="0"
+        max_length=2, choices=DOWNLOAD_STATUSES, default="0"
+    )
+    subtitles_download_status = m.CharField(
+        max_length=2, choices=DOWNLOAD_STATUSES, default="0"
     )
 
     audio_file = m.FileField(upload_to="audio/", blank=True, null=True)
@@ -45,17 +50,21 @@ class Song(m.Model):
     )
 
     def _set_audio_file_download_status(self, status):
-        statuses_to_values = {
-            j: i for i, j in self.AUDIO_FILE_DOWNLOAD_STATUSES
-        }
+        statuses_to_values = {j: i for i, j in self.DOWNLOAD_STATUSES}
 
         self.audio_file_download_status = statuses_to_values[status]
+        self.save(update_fields=["audio_file_download_status"])
+
+    def _set_subtitles_download_status(self, status):
+        statuses_to_values = {j: i for i, j in self.DOWNLOAD_STATUSES}
+
+        self.subtitles_download_status = statuses_to_values[status]
+        self.save(update_fields=["subtitles_download_status"])
 
     def _update_info_using_youtube_audio_download_object(
         self, yt, audio_filename
     ):
         # audio file stuff
-        self._set_audio_file_download_status("Downloaded")
 
         self.audio_file.name = str(
             django_app_settings.MEDIA_ROOT / "audio" / audio_filename
@@ -71,6 +80,91 @@ class Song(m.Model):
             "video_details": yt.vid_info["videoDetails"]
         }
 
+        self.save(
+            update_fields=[
+                "audio_file",
+                "title",
+                "published_at",
+                "duration",
+                "youtube_video_metadata",
+            ]
+        )
+
+    def _update_info_using_youtube_transcripts(self, transcript):
+        """
+        move this and other calculation/converter functions out of main modules.py later
+
+        transcript example:
+            [
+                {
+                    'text': 'Hey there',
+                    'start': 7.58,
+                    'duration': 6.13
+                },
+                {
+                    'text': 'how are you',
+                    'start': 14.08,
+                    'duration': 7.58
+                },
+            ]
+        """
+        # add end keys, remove durations & convert to integers, floats are not reliable
+        for i in transcript:
+            i["end"] = i["start"] + i.pop("duration")
+            i["start"] = i["start"] * 1000
+            i["end"] = i["end"] * 1000
+
+        # make sure blanks are filled with empty texts info
+        new_transcript = []
+        curr_start_time = 0
+
+        for i in transcript:
+            if i["start"] > curr_start_time:
+                new_transcript.append(
+                    {
+                        "start": curr_start_time,
+                        "end": i["start"],
+                        "text": "",
+                    }
+                )
+            new_transcript.append(i)
+            curr_start_time = i["end"]
+
+        # convert keys to our format
+        new_transcript = [
+            {
+                "start_time_millisecond": i["start"],
+                "end_time_millisecond": i["end"],
+                "text": i["text"].replace("♪", "").replace("♫", "").strip(),
+            }
+            for i in new_transcript
+        ]
+
+        # as it is not nice to have very short intervals of "" texts between lines
+        max_duration_in_ms_to_merge_with_previous_line = 500  # 0.5 s
+
+        refined_new_transcript = []
+
+        for i in new_transcript:
+            # add first line as it was
+            if len(refined_new_transcript) == 0:
+                refined_new_transcript.append(i)
+
+            elif (
+                i["end_time_millisecond"] - i["start_time_millisecond"]
+                <= max_duration_in_ms_to_merge_with_previous_line
+            ):
+                # join info with previous line, do not add separate entry for this one
+                last = refined_new_transcript[-1]
+
+                last["text"] = (last["text"] + " " + i["text"]).strip()
+
+                last["end_time_millisecond"] = i["end_time_millisecond"]
+            else:
+                refined_new_transcript.append(i)
+
+        self._update_lyrics_with_info(refined_new_transcript)
+
     @property
     def absolute_static_url_of_audio_file(self):
         if self.audio_file:
@@ -85,7 +179,7 @@ class Song(m.Model):
         # remove all lines - later optimize to not delete all lines on each update
         return SongTextLine.objects.filter(song=self).delete()
 
-    def add_lyrics(self, raw_lyrics):
+    def add_lyrics_with_raw_lyrics(self, raw_lyrics):
         """
         Use this method to create SongTextLine objects for this song
         """
@@ -102,6 +196,24 @@ class Song(m.Model):
                 start_time_millisecond=index * initial_default_line_duration,
                 end_time_millisecond=(index + 1)
                 * initial_default_line_duration,
+                language=language,
+                song=self,
+            )
+
+    def _update_lyrics_with_info(self, lyrics_info):
+        self.delete_lyrics()
+
+        for index, i in enumerate(lyrics_info):
+
+            language = Language.objects.get_or_create(
+                id=_get_language_using_text(i["text"])
+            )[0]
+
+            SongTextLine.objects.create(
+                line_number=index + 1,
+                text=i["text"],
+                start_time_millisecond=i["start_time_millisecond"],
+                end_time_millisecond=i["end_time_millisecond"],
                 language=language,
                 song=self,
             )

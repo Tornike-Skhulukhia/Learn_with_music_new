@@ -47,6 +47,12 @@ input{
             </div>
         </div>
         <div class="row p-3">
+            <div class="col fw-bold text-center">subtitles_video_youtube_url</div>
+            <div class="col text-center">
+                <a href="{{ object.youtube_url }}">{{ object.subtitles_video_youtube_url }}</a>
+            </div>
+        </div>
+        <div class="row p-3">
             <div class="col fw-bold text-center">custom_name</div>
             <div class="col text-center">
                 {{ object.custom_name }}
@@ -64,6 +70,14 @@ input{
                 class="col text-center text-white status-{{ object.get_audio_file_download_status_display|lower }}"
                 >
                 {{ object.get_audio_file_download_status_display|upper }}
+            </div>
+        </div>
+        <div class="row p-3">
+            <div class="col fw-bold text-center">subtitles_download_status</div>
+            <div 
+                class="col text-center text-white status-{{ object.get_subtitles_download_status_display|lower }}"
+                >
+                {{ object.get_subtitles_download_status_display|upper }}
             </div>
         </div>
         <div class="row p-3">
