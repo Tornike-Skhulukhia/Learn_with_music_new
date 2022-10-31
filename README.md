@@ -2,8 +2,8 @@
 
 ## Lots of useful features can be implemented, but for now, just these are implemented as an MVP only
 
-. Download of video using given Youtube url
-. Download of subtitles using given Youtube video url(other sources support will be added later)
+. Download of video using given Youtube url  
+. Download of subtitles using given Youtube video url(other sources support will be added later)  
 . After previous steps(if we had 1 or 2 videos one of which had subtitles added) we can listen to song and view what is mentioned in each line when playing song at the same time
 
 # important todos so far
