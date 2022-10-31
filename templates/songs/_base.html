@@ -21,15 +21,20 @@
         <a href="{% url 'songs_home' %}">
             <h1 class="px-3 py-2 bg-secondary text-white" >Home</h1>
         </a>
+
+        {% if messages %}
+        <ul class="messages" style="padding: 0px;">
+            {% for message in messages %}
+            <li 
+                style="padding: 8px 0px; border-radius:4px; font-size: 1.2rem" {% if message.tags %} class="text-center text-white bg-{{ message.tags }}"{% endif %}>
+                {{ message }}
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
     </div>
 
-    {% if messages %}
-    <ul class="messages">
-        {% for message in messages %}
-        <li style="font-size: 1.2rem" {% if message.tags %} class="text-center text-white bg-{{ message.tags }}"{% endif %}>{{ message }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}
 
 
     {% block content %}{% endblock content %}

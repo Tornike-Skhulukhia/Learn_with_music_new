@@ -1,3 +1,4 @@
+import copy
 import re
 
 from django.conf import settings as django_app_settings
@@ -7,67 +8,69 @@ from django.core.validators import MinLengthValidator
 from django.db import models as m
 from django.urls import reverse
 
-from .helper_funcs import _get_language_using_text
+# from .helper_funcs import _get_language_using_text
 
 
 # Create your models here.
 class Song(m.Model):
     DOWNLOAD_STATUSES = (
-        ("0", "Initial"),
-        ("1", "Processing"),
-        ("2", "Downloaded"),
-        ("-1", "Failed"),
+        ("Initial", "Initial"),
+        ("Processing", "Processing"),
+        ("Downloaded", "Downloaded"),
+        ("Failed", "Failed"),
     )
 
+    # song and lyrics sources | we may decide to add other audio sources besides youtube later
     youtube_url = m.CharField(max_length=128, default="")
     youtube_id = m.CharField(max_length=11)
 
-    subtitles_video_youtube_id = m.CharField(max_length=11, null=True)
-    subtitles_video_youtube_url = m.CharField(
+    subtitles_source_url = m.CharField(
         max_length=128, default="", null=True, blank=True
     )
 
-    title = m.CharField(max_length=256)
-    custom_name = m.CharField(max_length=256, blank=True, default="")
-    duration = m.SmallIntegerField(default=0)
-
-    published_at = m.DateField(null=True, blank=True)
-    raw_lyrics = m.TextField(blank=True, null=True)
-
-    created_at = m.DateTimeField(auto_now_add=True, null=True, blank=True)
-    updated_at = m.DateTimeField(auto_now=True, null=True, blank=True)
-
-    audio_file_download_status = m.CharField(
-        max_length=2, choices=DOWNLOAD_STATUSES, default="0"
-    )
-    subtitles_download_status = m.CharField(
-        max_length=2, choices=DOWNLOAD_STATUSES, default="0"
-    )
-
+    # song & lyrics
     audio_file = m.FileField(upload_to="audio/", blank=True, null=True)
+    lyrics_and_timings = m.JSONField(default=dict)
     youtube_video_metadata = m.JSONField(default=dict)
 
+    # song info
+    title = m.CharField(max_length=256)
+    duration = m.SmallIntegerField(default=0)
+    published_at = m.DateField(null=True, blank=True)
+
+    # statuses
+    audio_file_download_status = m.CharField(
+        max_length=16, choices=DOWNLOAD_STATUSES, default="Initial"
+    )
+    subtitles_download_status = m.CharField(
+        max_length=16, choices=DOWNLOAD_STATUSES, default="Initial"
+    )
+
+    # user-defined data
+    custom_name = m.CharField(max_length=256, blank=True, default="")
+
+    # meta info
+    created_at = m.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = m.DateTimeField(auto_now=True, null=True, blank=True)
     created_by = m.ForeignKey(
         get_user_model(), on_delete=m.SET_NULL, blank=True, null=True
     )
 
     def _set_audio_file_download_status(self, status):
-        statuses_to_values = {j: i for i, j in self.DOWNLOAD_STATUSES}
 
-        self.audio_file_download_status = statuses_to_values[status]
+        self.audio_file_download_status = status
         self.save(update_fields=["audio_file_download_status"])
 
     def _set_subtitles_download_status(self, status):
-        statuses_to_values = {j: i for i, j in self.DOWNLOAD_STATUSES}
 
-        self.subtitles_download_status = statuses_to_values[status]
+        self.subtitles_download_status = status
         self.save(update_fields=["subtitles_download_status"])
 
     def _update_info_using_youtube_audio_download_object(
         self, yt, audio_filename
     ):
-        # audio file stuff
 
+        # audio file stuff
         self.audio_file.name = str(
             django_app_settings.MEDIA_ROOT / "audio" / audio_filename
         )
@@ -92,9 +95,59 @@ class Song(m.Model):
             ]
         )
 
-    def _update_info_using_youtube_transcripts(self, transcript):
+    def set_lyrics_without_timing_info(
+        self,
+        raw_lyrics,
+        initial_default_line_duration=5000,
+    ):
+
+        lyrics_and_timings = []
+
+        for index, text in enumerate(raw_lyrics):
+            lyrics_and_timings.append(
+                {
+                    "n": index + 1,
+                    "text": text,
+                    "start": index * initial_default_line_duration,
+                    "end": (index + 1) * initial_default_line_duration,
+                }
+            )
+
+        self.lyrics_and_timings = lyrics_and_timings
+        self.save(update_fields=["lyrics_and_timings"])
+
+    def update_existing_lyrics_timings_using_only_start_and_end_times(
+        self, new_start_and_end_times_list
+    ):
         """
-        move this and other calculation/converter functions out of main modules.py later
+        We do not send texts from front, but a sequence of new start and end times to save
+        """
+
+        assert len(self.lyrics_and_timings) == len(
+            new_start_and_end_times_list
+        ), f"Length of {len(self.lyrics_and_timings)=} and {len(new_start_and_end_times_list)=} must be same"
+
+        new_lyrics_and_timings = []
+
+        for i, j in zip(self.lyrics_and_timings, new_start_and_end_times_list):
+
+            new_lyrics_and_timings.append(
+                {
+                    "n": i["n"],
+                    "text": i["text"],
+                    "start": j["start"],
+                    "end": j["end"],
+                }
+            )
+
+        self.lyrics_and_timings = new_lyrics_and_timings
+        self.save(update_fields=["lyrics_and_timings"])
+
+    def set_lyrics_using_timing_info_in_seconds(
+        self, transcript, max_duration_in_ms_to_merge_with_previous_line=500
+    ):
+        """
+        Think how to make seconds & milliseconds handling easier with less chance of bugs.
 
         transcript example:
             [
@@ -110,11 +163,14 @@ class Song(m.Model):
                 },
             ]
         """
+        # not modify original list
+        transcript = copy.deepcopy(transcript)
+
         # add end keys, remove durations & convert to integers, floats are not reliable
         for i in transcript:
             i["end"] = i["start"] + i.pop("duration")
-            i["start"] = i["start"] * 1000
-            i["end"] = i["end"] * 1000
+            i["start"] = int(i["start"] * 1000)
+            i["end"] = int(i["end"] * 1000)
 
         # make sure blanks are filled with empty texts info
         new_transcript = []
@@ -124,52 +180,43 @@ class Song(m.Model):
             if i["start"] > curr_start_time:
                 new_transcript.append(
                     {
+                        "text": "",
                         "start": curr_start_time,
                         "end": i["start"],
-                        "text": "",
                     }
                 )
             new_transcript.append(i)
             curr_start_time = i["end"]
 
-        # convert keys to our format
-        new_transcript = [
-            {
-                "start_time_millisecond": i["start"],
-                "end_time_millisecond": i["end"],
-                "text": i["text"].replace("♪", "").replace("♫", "").strip(),
-            }
-            for i in new_transcript
-        ]
-
-        # remove some texts in brackets(sometimes present on youtube)
+        # clean text | remove {some_text_here} and extra symbols
         for i in new_transcript:
-            i["text"] = re.sub("[\{].*?[\}]", "", i["text"])
+            i["text"] = re.sub("[\{].*?[\}]|♪|♫", "", i["text"]).strip()
 
         # as it is not nice to have very short intervals of "" texts between lines
-        max_duration_in_ms_to_merge_with_previous_line = 500  # 0.5 s
 
-        refined_new_transcript = []
+        refined_new_transcript = [new_transcript[0]]
 
-        for i in new_transcript:
-            # add first line as it was
-            if len(refined_new_transcript) == 0:
-                refined_new_transcript.append(i)
-
-            elif (
-                i["end_time_millisecond"] - i["start_time_millisecond"]
+        for i in new_transcript[1:]:
+            if (
+                i["end"] - i["start"]
                 <= max_duration_in_ms_to_merge_with_previous_line
             ):
                 # join info with previous line, do not add separate entry for this one
                 last = refined_new_transcript[-1]
 
-                last["text"] = (last["text"] + " " + i["text"]).strip()
+                last["text"] = (f'{last["text"]} {i["text"]}').strip()
 
-                last["end_time_millisecond"] = i["end_time_millisecond"]
+                last["end"] = i["end"]
+
             else:
                 refined_new_transcript.append(i)
 
-        self._update_lyrics_with_info(refined_new_transcript)
+        # finally add line numbers
+        for index, i in enumerate(refined_new_transcript):
+            i["n"] = index + 1
+
+        self.lyrics_and_timings = refined_new_transcript
+        self.save(update_fields=["lyrics_and_timings"])
 
     @property
     def absolute_static_url_of_audio_file(self):
@@ -181,114 +228,8 @@ class Song(m.Model):
     def youtube_image(self):
         return f"https://i3.ytimg.com/vi/{self.youtube_id}/hqdefault.jpg"
 
-    def delete_lyrics(self):
-        # remove all lines - later optimize to not delete all lines on each update
-        return SongTextLine.objects.filter(song=self).delete()
-
-    def add_lyrics_with_raw_lyrics(self, raw_lyrics):
-        """
-        Use this method to create SongTextLine objects for this song
-        """
-        initial_default_line_duration = 5000  # 5s
-
-        for index, text in enumerate(raw_lyrics):
-            language = Language.objects.get_or_create(
-                id=_get_language_using_text(text)
-            )[0]
-
-            SongTextLine.objects.create(
-                line_number=index + 1,
-                text=text,
-                start_time_millisecond=index * initial_default_line_duration,
-                end_time_millisecond=(index + 1)
-                * initial_default_line_duration,
-                language=language,
-                song=self,
-            )
-
-    def _update_lyrics_with_info(self, lyrics_info):
-        self.delete_lyrics()
-
-        for index, i in enumerate(lyrics_info):
-
-            language = Language.objects.get_or_create(
-                id=_get_language_using_text(i["text"])
-            )[0]
-
-            SongTextLine.objects.create(
-                line_number=index + 1,
-                text=i["text"],
-                start_time_millisecond=i["start_time_millisecond"],
-                end_time_millisecond=i["end_time_millisecond"],
-                language=language,
-                song=self,
-            )
-
     def get_absolute_url(self):
         return reverse("view_song_detail", kwargs={"pk": self.id})
 
-    @property
-    def lyrics(self):
-        """
-        Easier to use in front format
-        """
-
-        # optimize later...
-        lyrics = [
-            {
-                "start": i.start_time_millisecond,
-                "end": i.end_time_millisecond,
-                "text": i.text,
-            }
-            for i in self.songtextline_set.order_by("line_number").all()
-        ]
-
-        return lyrics
-
-    def apply_lyrics_timing_update(self, updates_to_apply):
-
-        # will be very slow, but working solution for now as MVP
-        for info, line in zip(
-            updates_to_apply,
-            self.songtextline_set.order_by("line_number").all(),
-        ):
-            line.start_time_millisecond = info["s"]
-            line.end_time_millisecond = info["e"]
-            line.save()
-
-    class Meta:
-        constraints = [
-            m.UniqueConstraint(
-                fields=["created_by", "youtube_id"],
-                name="unique_song_from_youtube_per_user",
-            )
-        ]
-
     def __str__(self):
         return self.title
-
-
-class Language(m.Model):
-    id = m.CharField(
-        max_length=2, primary_key=True, validators=[MinLengthValidator(2)]
-    )
-
-    def __str__(self):
-        return self.id
-
-
-class SongTextLine(m.Model):
-    line_number = m.SmallIntegerField()
-    text = m.CharField(max_length=128)
-    start_time_millisecond = m.IntegerField()
-    end_time_millisecond = m.IntegerField(blank=True, null=True)
-    language = m.ForeignKey(
-        Language, on_delete=m.SET_NULL, null=True, blank=True
-    )
-    song = m.ForeignKey(
-        Song,
-        on_delete=m.CASCADE,
-    )
-
-    def __str__(self):
-        return f"{self.song} | line {self.line_number} | {self.text} |"

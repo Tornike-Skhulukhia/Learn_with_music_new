@@ -1,3 +1,6 @@
+from urllib.parse import urlparse, parse_qs
+
+
 def _get_language_using_text(text):
     text = text.lower()
 
@@ -36,3 +39,23 @@ def _get_language_using_text(text):
         return result_lang
 
     return "XX"
+
+
+def _get_youtube_video_id_from_url(url):
+    """
+    Currently supported url format:
+        https://www.youtube.com/watch?v=TO-_3tck2tg
+
+    """
+
+    query = parse_qs(urlparse(url).query)
+
+    try:
+        youtube_id = query["v"][0]
+
+        assert len(youtube_id) == 11
+
+        return youtube_id
+
+    except Exception:
+        return None

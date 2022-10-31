@@ -12,4 +12,5 @@ WORKDIR /app
 COPY requirements.txt .
 
 RUN pip install -r requirements.txt
+RUN pip install youtube_transcript_api
 RUN pip install pytube

@@ -61,31 +61,12 @@ services:
       - 5672:5672
       - 15672:15672
 
-  worker_audio:
-    container_name: youtube_audio_download_worker
+  worker:
+    container_name: worker
     build:
       context: .
-      dockerfile: Dockerfile.youtube_audio_download_worker
-    entrypoint: "python -m rabbitmq_workers.consumer_youtube_audio_download"
-    restart: unless-stopped
-    networks:
-      - skynet
-    volumes:
-      - .:/app/
-    env_file:
-      - env.postgres
-    environment:
-      RABBITMQ_HOST: "rabbitmq"
-    depends_on:
-      - rabbitmq
-      - postgres
-      - app
-  worker_subtitles:
-    container_name: youtube_subtitles_download_worker
-    build:
-      context: .
-      dockerfile: Dockerfile.youtube_subtitles_download_worker
-    entrypoint: "python -m rabbitmq_workers.consumer_youtube_subtitles_download"
+      dockerfile: Dockerfile.worker
+    entrypoint: "python -m rabbitmq_workers.consumer"
     restart: unless-stopped
     networks:
       - skynet

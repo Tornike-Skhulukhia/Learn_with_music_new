@@ -66,7 +66,7 @@ const app = Vue.createApp({
                 method: "POST",
                 body: JSON.stringify({
                     csrfmiddlewaretoken: document.querySelector("[name='csrfmiddlewaretoken']").value,
-                    data: this.lyrics_data.map(elem => { return {s: elem.start, e:elem.end} })
+                    data: this.lyrics_data.map(elem => { return {"start": elem.start, "end":elem.end} })
                 }),
                 headers: { "Content-Type": "application/json" },
               })

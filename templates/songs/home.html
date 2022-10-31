@@ -16,7 +16,7 @@
         <h2>your last songs</h2>
         
         {% for song in object_list %}
-        <div class="card col-12 col-md-4 col-lg-3">
+        <div class="card col-12 col-md-4 col-lg-3 p-1">
             <a href="{{ song.get_absolute_url }}">
                 <img class="card-img-top" src="{{ song.youtube_image }}">
             </a>

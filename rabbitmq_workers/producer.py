@@ -1,6 +1,5 @@
-import time
-from .config import FANOUT_EXCHANGE_NAME, RABBITMQ_HOST
 from .common import _create_exchange_and_get_params
+from .config import FANOUT_EXCHANGE_NAME, RABBITMQ_HOST
 
 
 def send_fanout_message(rabbitmq_host, exchange_name, message):

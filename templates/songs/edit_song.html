@@ -4,14 +4,7 @@
 {% block title %}Edit Song{% endblock title %}
 
 {% block style %}
-input, textarea{
-    width: 100%;
-    margin: 4px;
-}
 
-[id*="div_id"]{
-    margin-bottom: 20px;
-}
 
 {% endblock style %}
 
@@ -19,12 +12,37 @@ input, textarea{
 
 <div class="container">
 
-    <h1 class="text-center">Edit song</h1>
-    <h6 class="my-4 text-danger">By editing song info your saved lyrics timings data will be lost!</h6>
+    <h1 class="text-center">{{ title }}</h1>
     
     <form method="post">{% csrf_token %}
-        {{ form | crispy }}
-        <input type="submit" value="Update" class="btn btn-success">
+        <div>
+            <label style="font-size:1.2rem" class="text-primary fw-bold" for="custom_name">Custom Name</label>
+            <input
+                id="custom_name"
+                placeholder="My Song"
+                type="text"
+                name="custom_name"
+                value="{{ custom_name }}"
+                class="col-12 mb-3"
+                style="color: #12171c; resize: none; width: 100%; font-size: 1.4rem; padding: 20px;" 
+            >
+        </div>
+        <div>
+            <label style="font-size:1.2rem" class="text-primary fw-bold" for="lyrics">
+                Lyrics text, start_time, end_time
+                <span class="text-muted" style="font-size: 0.7rem">
+                    | Please fully include times on all lines, otherwise text will be saved without timing | this UI may improve when we have time for it
+                </span>
+            </label>
+            <textarea 
+                id="lyrics"
+                placeholder="..."
+                name="lyrics"
+                class="col-12"
+                style="color: #12171c; resize: none; width: 100%; font-size: 1.4rem; height: 60vh; padding: 20px;" 
+            >{{ lyrics }}</textarea>
+            <input type="submit" value="Update" class="btn btn-success w-100">
+        </div>
     </form>
 </div>
 
