@@ -24,7 +24,7 @@ Example image of current listen page
 And some songs added (currently even pagination is not implemented)  
 ![songs list page example](./static/readme_imgs/songs_list_page_example.png)
 
-Youtube video used - ![The Blue Cafe ♨︎ CHRIS REA](https://www.youtube.com/watch?v=M7yFx8PqwLI&ab_channel=setzehomes)
+Youtube video used [The Blue Cafe ♨︎ CHRIS REA](https://www.youtube.com/watch?v=M7yFx8PqwLI&ab_channel=setzehomes)
 
 ## Lots of useful features can be implemented, but for now, just these are implemented as an MVP
 
@@ -33,7 +33,7 @@ Youtube video used - ![The Blue Cafe ♨︎ CHRIS REA](https://www.youtube.com/w
 . Add subtitles manually and/or edit timing for existing ones so that music is in sync with each line
 . Listen to downloaded audio and see the subtitles using timing that we set in previous steps
 
-# important todos so far
+# some important todos
 
 . make code cleaner when it becomes clear that specific features will remain this way for now  
 . add pydantic models/dataclasses for important functionality, ex: use something like LyricsLine object with all required fields to pass between functions, instead of doing validations by hand and relying on passer functions. This will allow for example to create same LyricsLine object by supplying start time and duration, or start time and end times, so that we do not need to care about those details later on, we will always have data we need.
