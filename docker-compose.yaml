@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   app:
-    container_name: "app"
+    container_name: "lwm_app"
     build:
       context: .
       dockerfile: Dockerfile.app
@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
 
   postgres:
-    container_name: "postgres"
+    container_name: "lwm_postgres"
     image: postgres
     shm_size: 1g
     environment:
@@ -38,7 +38,7 @@ services:
     restart: unless-stopped
 
   pgadmin:
-    container_name: "pgadmin"
+    container_name: "lwm_pgadmin"
     image: dpage/pgadmin4
     environment:
       PGADMIN_DEFAULT_EMAIL: change_me@gmail.com # use this to login on http://localhost:6050
@@ -52,7 +52,7 @@ services:
     restart: unless-stopped
 
   rabbitmq:
-    container_name: rabbitmq
+    container_name: "lwm_rabbitmq"
     image: rabbitmq:3-management
     networks:
       - skynet
@@ -62,7 +62,7 @@ services:
       - 15672:15672
 
   worker:
-    container_name: worker
+    container_name: "lwm_worker"
     build:
       context: .
       dockerfile: Dockerfile.worker
@@ -85,7 +85,7 @@ services:
   #   networks:
   #     - skynet
   #   restart: unless-stopped
-  #   container_name: finder_v3_redis
+  #   container_name: redis
 
 
 volumes:

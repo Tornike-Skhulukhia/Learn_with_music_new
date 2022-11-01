@@ -194,7 +194,9 @@ class Song(m.Model):
 
         # as it is not nice to have very short intervals of "" texts between lines
 
-        refined_new_transcript = [new_transcript[0]]
+        refined_new_transcript = [
+            *new_transcript[:1]
+        ]  # add first element that way to avoid index error for empty inputs
 
         for i in new_transcript[1:]:
             if (
