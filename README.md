@@ -12,7 +12,19 @@ make up
 
 After few minutes go to localhost:8000/ to view current UI, where you can add new songs and listen to them.
 
-![]()
+These are useful shortcuts for listen page:  
+. s - to save current timing of song  
+. p - to play/pause  
+. 0/1/5 - to change number that controls how many seconds should 1 click make difference in timings  
+. l(el) - to turn on/off auto scroll when playing
+
+Example image of current listen page  
+![listen page example image](./static/readme_imgs/listen_page_example.png)
+
+And some songs added (currently even pagination is not implemented)  
+![songs list page example](./static/readme_imgs/songs_list_page_example.png)
+
+Youtube video used - ![The Blue Cafe ♨︎ CHRIS REA](https://www.youtube.com/watch?v=M7yFx8PqwLI&ab_channel=setzehomes)
 
 ## Lots of useful features can be implemented, but for now, just these are implemented as an MVP
 
