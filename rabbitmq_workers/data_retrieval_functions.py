@@ -55,7 +55,7 @@ def _get_youtube_video_transcript(url):
 def _get_transcript_using_url(url):
     website = urlparse(url.lower()).netloc.replace("www.", "")
 
-    if website == "youtube.com":
+    if website == "youtube.com" or website == "m.youtube.com":
         return _get_youtube_video_transcript(url)
 
     else:
