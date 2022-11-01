@@ -49,6 +49,11 @@ def _get_youtube_video_transcript(url):
         ),
     )
 
+    # having \n in text causes issue in current csv-like basic text edits, so lets fix that here
+    # later most probably we will do this with pydantic/dataclasses
+    for i in transcript:
+        i["text"] = i["text"].replace("\n", " ").strip()
+
     return transcript
 
 

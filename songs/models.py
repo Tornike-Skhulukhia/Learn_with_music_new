@@ -3,15 +3,10 @@ import re
 
 from django.conf import settings as django_app_settings
 from django.contrib.auth import get_user_model
-from django.contrib.postgres.fields import ArrayField
-from django.core.validators import MinLengthValidator
 from django.db import models as m
 from django.urls import reverse
 
-# from .helper_funcs import _get_language_using_text
 
-
-# Create your models here.
 class Song(m.Model):
     DOWNLOAD_STATUSES = (
         ("Initial", "Initial"),
