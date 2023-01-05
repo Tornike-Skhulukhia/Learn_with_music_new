@@ -5,7 +5,7 @@ up:
 
 # stop containers
 down:
-	docker-compose down
+	docker-compose down -t 1
 
 logs:
 	docker-compose logs -f --tail=100

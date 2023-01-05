@@ -20,9 +20,7 @@ class TestSong(TestCase):
         song = Song.objects.first()
 
         self.assertEqual(song.youtube_id, "s3wNuru4U0I")
-        self.assertEqual(
-            song.title, "USA For Africa - We Are The World (HQ official Video)"
-        )
+        self.assertEqual(song.title, "USA For Africa - We Are The World (HQ official Video)")
         self.assertEqual(song.duration, 426)
         self.assertEqual(song.published_at, date(2016, 2, 28))
 
@@ -38,9 +36,7 @@ class TestSong(TestCase):
             "The clock's run out, time's up, over, blaow",
         ]
 
-        self.song.set_lyrics_without_timing_info(
-            raw_lyrics, initial_default_line_duration=2000
-        )
+        self.song.set_lyrics_without_timing_info(raw_lyrics, initial_default_line_duration=2000)
 
         lyrics_and_timings = self.song.lyrics_and_timings
 
@@ -165,12 +161,9 @@ class TestSong(TestCase):
         self.assertEqual(lyrics[5]["end"], 27000)  # stored as milliseconds
 
         # lines with very short durations, merged with previous ones
-        self.assertEqual(
-            lyrics[4]["text"], f'{info[2]["text"]} {info[3]["text"]}'
-        )
+        self.assertEqual(lyrics[4]["text"], f'{info[2]["text"]} {info[3]["text"]}')
 
         self.assertEqual(
             lyrics[4]["end"],
-            (info[2]["start"] + info[2]["duration"] + info[3]["duration"])
-            * 1000,
+            (info[2]["start"] + info[2]["duration"] + info[3]["duration"]) * 1000,
         )
