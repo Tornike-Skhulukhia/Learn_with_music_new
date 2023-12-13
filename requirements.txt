@@ -3,5 +3,5 @@ djangorestframework==3.13.1
 djangorestframework-simplejwt==5.2.0
 psycopg2-binary==2.9.3
 wait-for-it==2.2.1
-django-crispy-forms
+django-crispy-forms<2.0
 pika

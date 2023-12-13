@@ -49,7 +49,7 @@ input{
         <div class="row p-3">
             <div class="col fw-bold text-center">subtitles_source_url</div>
             <div class="col text-center">
-                <a href="{{ object.youtube_url }}">{{ object.subtitles_source_url }}</a>
+                <a href="{{ object.youtube_url }}">{% firstof object.subtitles_source_url "" %}</a>
             </div>
         </div>
         <div class="row p-3">

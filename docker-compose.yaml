@@ -37,19 +37,19 @@ services:
       - skynet
     restart: unless-stopped
 
-  pgadmin:
-    container_name: "lwm_pgadmin"
-    image: dpage/pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: change_me@gmail.com # use this to login on http://localhost:6050
-      PGADMIN_DEFAULT_PASSWORD: password # and this also
-    ports:
-      - 6050:80
-    networks:
-      - skynet
-    depends_on:
-      - postgres
-    restart: unless-stopped
+  # pgadmin:
+  #   container_name: "lwm_pgadmin"
+  #   image: dpage/pgadmin4
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: change_me@gmail.com # use this to login on http://localhost:6050
+  #     PGADMIN_DEFAULT_PASSWORD: password # and this also
+  #   ports:
+  #     - 6050:80
+  #   networks:
+  #     - skynet
+  #   depends_on:
+  #     - postgres
+  #   restart: unless-stopped
 
   rabbitmq:
     container_name: "lwm_rabbitmq"
